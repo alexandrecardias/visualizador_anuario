@@ -2,60 +2,62 @@ import streamlit as st
 from bs4 import BeautifulSoup
 import requests
 from urllib.parse import urljoin  # Garantir URLs absolutas
+import pandas as pd
+import re  # Para manipular os títulos
 
 # URLs principais organizadas por ano e em sequência numérica
 URLS_BY_YEAR = {
     "2020": {
-        "2. Geral": "https://anuario-estatistico-unb-2020.netlify.app/geral",
-        "3. Graduação": "https://anuario-estatistico-unb-2020.netlify.app/grad",
-        "4. Pós-Graduação": "https://anuario-estatistico-unb-2020.netlify.app/pos",
-        "5. Mestrado": "https://anuario-estatistico-unb-2020.netlify.app/mest",
-        "6. Doutorado": "https://anuario-estatistico-unb-2020.netlify.app/dout",
-        "7. Produção Intelectual e Pesquisa": "https://anuario-estatistico-unb-2020.netlify.app/pip",
-        "8. Extensão": "https://anuario-estatistico-unb-2020.netlify.app/ext",
-        "9. Recursos Humanos": "https://anuario-estatistico-unb-2020.netlify.app/rh",
-        "10. Atividades Comunitárias": "https://anuario-estatistico-unb-2020.netlify.app/comu",
-        "11. Órgãos Complementares, Centros, Assessorias, Secretarias e Unidades Auxiliares": "https://anuario-estatistico-unb-2020.netlify.app/org",
-        "12. Planejamento, Execução Orçamentária e Convênios": "https://anuario-estatistico-unb-2020.netlify.app/dpo",
+        "Geral": "https://anuario-estatistico-unb-2020.netlify.app/geral",
+        "Graduação": "https://anuario-estatistico-unb-2020.netlify.app/grad",
+        "Pós-Graduação": "https://anuario-estatistico-unb-2020.netlify.app/pos",
+        "Mestrado": "https://anuario-estatistico-unb-2020.netlify.app/mest",
+        "Doutorado": "https://anuario-estatistico-unb-2020.netlify.app/dout",
+        "Produção Intelectual e Pesquisa": "https://anuario-estatistico-unb-2020.netlify.app/pip",
+        "Extensão": "https://anuario-estatistico-unb-2020.netlify.app/ext",
+        "Recursos Humanos": "https://anuario-estatistico-unb-2020.netlify.app/rh",
+        "Atividades Comunitárias": "https://anuario-estatistico-unb-2020.netlify.app/comu",
+        "Órgãos Complementares, Centros, Assessorias, Secretarias e Unidades Auxiliares": "https://anuario-estatistico-unb-2020.netlify.app/org",
+        "Planejamento, Execução Orçamentária e Convênios": "https://anuario-estatistico-unb-2020.netlify.app/dpo",
     },
     "2021": {
-        "2. Geral": "https://anuario2021.netlify.app/geral",
-        "3. Graduação": "https://anuario2021.netlify.app/grad",
-        "4. Pós-Graduação": "https://anuario2021.netlify.app/pos",
-        "5. Mestrado": "https://anuario2021.netlify.app/mest",
-        "6. Doutorado": "https://anuario2021.netlify.app/dout",
-        "7. Produção Intelectual e Pesquisa": "https://anuario2021.netlify.app/pip",
-        "8. Extensão": "https://anuario2021.netlify.app/ext",
-        "9. Recursos Humanos": "https://anuario2021.netlify.app/rh",
-        "10. Atividades Comunitárias": "https://anuario2021.netlify.app/comu",
-        "11. Órgãos Complementares, Centros, Assessorias, Secretarias e Unidades Auxiliares": "https://anuario2021.netlify.app/org",
-        "12. Planejamento, Execução Orçamentária e Convênios": "https://anuario2021.netlify.app/dpo",
+        "Geral": "https://anuario2021.netlify.app/geral",
+        "Graduação": "https://anuario2021.netlify.app/grad",
+        "Pós-Graduação": "https://anuario2021.netlify.app/pos",
+        "Mestrado": "https://anuario2021.netlify.app/mest",
+        "Doutorado": "https://anuario2021.netlify.app/dout",
+        "Produção Intelectual e Pesquisa": "https://anuario2021.netlify.app/pip",
+        "Extensão": "https://anuario2021.netlify.app/ext",
+        "Recursos Humanos": "https://anuario2021.netlify.app/rh",
+        "Atividades Comunitárias": "https://anuario2021.netlify.app/comu",
+        "Órgãos Complementares, Centros, Assessorias, Secretarias e Unidades Auxiliares": "https://anuario2021.netlify.app/org",
+        "Planejamento, Execução Orçamentária e Convênios": "https://anuario2021.netlify.app/dpo",
     },
     "2022": {
-        "2. Geral": "https://anuario2022.netlify.app/geral",
-        "3. Graduação": "https://anuario2022.netlify.app/grad",
-        "4. Pós-Graduação": "https://anuario2022.netlify.app/pos",
-        "5. Mestrado": "https://anuario2022.netlify.app/mest",
-        "6. Doutorado": "https://anuario2022.netlify.app/dout",
-        "7. Produção Intelectual e Pesquisa": "https://anuario2022.netlify.app/pip",
-        "8. Extensão": "https://anuario2022.netlify.app/ext",
-        "9. Recursos Humanos": "https://anuario2022.netlify.app/rh",
-        "10. Atividades Comunitárias": "https://anuario2022.netlify.app/comu",
-        "11. Órgãos Complementares, Centros, Assessorias, Secretarias e Unidades Auxiliares": "https://anuario2022.netlify.app/org",
-        "12. Planejamento, Execução Orçamentária e Convênios": "https://anuario2022.netlify.app/dpo",
+        "Geral": "https://anuario2022.netlify.app/geral",
+        "Graduação": "https://anuario2022.netlify.app/grad",
+        "Pós-Graduação": "https://anuario2022.netlify.app/pos",
+        "Mestrado": "https://anuario2022.netlify.app/mest",
+        "Doutorado": "https://anuario2022.netlify.app/dout",
+        "Produção Intelectual e Pesquisa": "https://anuario2022.netlify.app/pip",
+        "Extensão": "https://anuario2022.netlify.app/ext",
+        "Recursos Humanos": "https://anuario2022.netlify.app/rh",
+        "Atividades Comunitárias": "https://anuario2022.netlify.app/comu",
+        "Órgãos Complementares, Centros, Assessorias, Secretarias e Unidades Auxiliares": "https://anuario2022.netlify.app/org",
+        "Planejamento, Execução Orçamentária e Convênios": "https://anuario2022.netlify.app/dpo",
     },
     "2023": {
-        "2. Geral": "https://anuario2023.netlify.app/geral",
-        "3. Graduação": "https://anuario2023.netlify.app/grad",
-        "4. Pós-Graduação": "https://anuario2023.netlify.app/pos",
-        "5. Mestrado": "https://anuario2023.netlify.app/mest",
-        "6. Doutorado": "https://anuario2023.netlify.app/dout",
-        "7. Produção Intelectual e Pesquisa": "https://anuario2023.netlify.app/pip",
-        "8. Extensão": "https://anuario2023.netlify.app/ext",
-        "9. Recursos Humanos": "https://anuario2023.netlify.app/rh",
-        "10. Atividades Comunitárias": "https://anuario2023.netlify.app/comu",
-        "11. Órgãos Complementares, Centros, Assessorias, Secretarias e Unidades Auxiliares": "https://anuario2023.netlify.app/org",
-        "12. Planejamento, Execução Orçamentária e Convênios": "https://anuario2023.netlify.app/dpo",
+        "Geral": "https://anuario2023.netlify.app/geral",
+        "Graduação": "https://anuario2023.netlify.app/grad",
+        "Pós-Graduação": "https://anuario2023.netlify.app/pos",
+        "Mestrado": "https://anuario2023.netlify.app/mest",
+        "Doutorado": "https://anuario2023.netlify.app/dout",
+        "Produção Intelectual e Pesquisa": "https://anuario2023.netlify.app/pip",
+        "Extensão": "https://anuario2023.netlify.app/ext",
+        "Recursos Humanos": "https://anuario2023.netlify.app/rh",
+        "Atividades Comunitárias": "https://anuario2023.netlify.app/comu",
+        "Órgãos Complementares, Centros, Assessorias, Secretarias e Unidades Auxiliares": "https://anuario2023.netlify.app/org",
+        "Planejamento, Execução Orçamentária e Convênios": "https://anuario2023.netlify.app/dpo",
     },
 }
 
@@ -70,6 +72,10 @@ def load_html_from_url(url):
         st.error(f"Erro ao carregar a URL {url}: {e}")
         return None
 
+# Função para limpar números do início dos títulos
+def clean_title(title):
+    return re.sub(r"^\d+\.\s*", "", title)
+
 # Função para extrair tabelas com títulos
 def extract_tables_and_titles(soup):
     tables = []
@@ -77,7 +83,7 @@ def extract_tables_and_titles(soup):
     for table in soup.find_all("table"):
         title_tag = table.find_previous("h3") or table.find_previous("h2")
         if title_tag:
-            title_text = title_tag.get_text(strip=True)
+            title_text = clean_title(title_tag.get_text(strip=True))
             titles.append(title_text)
         else:
             titles.append("Título desconhecido")
@@ -93,7 +99,7 @@ def extract_images_with_titles(soup, base_url):
         if src:
             absolute_src = urljoin(base_url, src)
             title_tag = img.find_previous("h3") or img.find_previous("h2")
-            title = title_tag.get_text(strip=True) if title_tag else "Gráfico sem título"
+            title = clean_title(title_tag.get_text(strip=True)) if title_tag else "Gráfico sem título"
             titles.append(title)
             images.append(absolute_src)
     return images, titles
@@ -103,11 +109,17 @@ def search_in_tables(tables, titles, search_term):
     results = []
     for table_html, title in zip(tables, titles):
         soup = BeautifulSoup(table_html, "html.parser")
+        headers = [th.get_text(strip=True) for th in soup.find_all("th")]
         rows = soup.find_all("tr")
         matching_rows = []
         for row in rows:
-            if search_term.lower() in row.get_text(strip=True).lower():
-                matching_rows.append(row.get_text(strip=True))
+            row_text = [td.get_text(strip=True) for td in row.find_all("td")]
+            if search_term.lower() in " ".join(row_text).lower():
+                if headers:
+                    row_with_headers = dict(zip(headers, row_text))
+                else:
+                    row_with_headers = {"Valores": row_text}
+                matching_rows.append(row_with_headers)
         if matching_rows:
             results.append({"title": title, "matches": matching_rows})
     return results
@@ -136,7 +148,11 @@ if soup:
                 for result in search_results:
                     st.write(f"### {result['title']}")
                     for match in result["matches"]:
-                        st.write(f"- {match}")
+                        if isinstance(match, dict):
+                            df = pd.DataFrame([match])
+                            st.table(df)
+                        else:
+                            st.write(match)
             else:
                 st.write("Nenhum resultado encontrado para a pesquisa.")
         else:
@@ -158,6 +174,5 @@ if soup:
 st.markdown("---")
 st.markdown(
     "Desenvolvido para a **Universidade de Brasília (UnB)**. "
-    "Se encontrar algum erro ou problema, por favor, entre em contato com a equipe técnica."
+    "Se encontrar algum erro ou problema, por favor, entre em contato com a equipe técnica. DPO/DAI/CEI"
 )
-
